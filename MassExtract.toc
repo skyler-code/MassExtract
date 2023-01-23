@@ -1,0 +1,7 @@
+## Interface: 30400
+## Title: MassExtract
+## Notes: Addon for easy prospecting, milling, or lockpicking
+
+bindings.xml
+
+MassExtract.lua

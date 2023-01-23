@@ -1,0 +1,8 @@
+<Bindings>
+	<Binding name="MASSEXTRACTBINDING1" header="MASSEXTRACTHEADER" category="ADDONS">
+	</Binding>
+	<Binding name="MASSEXTRACTBINDING2"  category="ADDONS">
+	</Binding>
+	<Binding name="MASSEXTRACTBINDING3"  category="ADDONS">
+	</Binding>
+</Bindings>
