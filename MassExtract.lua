@@ -101,7 +101,7 @@ end
 local function findmat(destroyInfo)
     local function slotHasMat(bagSlot, itemSlot)
         local itemInfo = GetContainerItemInfo(bagSlot,itemSlot)
-        if itemInfo and itemInfo.itemID ~= HEARTHSTONE_ITEM_ID and (not destroyInfo.stack or itemInfo.itemID >= destroyInfo.stack) then
+        if itemInfo and itemInfo.itemID ~= HEARTHSTONE_ITEM_ID and (not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack) then
             if destroyInfo.cache and destroyInfo.cache[itemInfo.itemID] ~= nil then
                 return destroyInfo.cache[itemInfo.itemID]
             end
