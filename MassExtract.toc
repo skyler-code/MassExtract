@@ -1,6 +1,7 @@
-## Interface: 30402
+## Interface: 30403
 ## Title: MassExtract
 ## Notes: Addon for easy prospecting, milling, or lockpicking
+## Version: 1.0c
 
 bindings.xml
 
