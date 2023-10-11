@@ -79,6 +79,8 @@ local function nearestTenth(v)
     return Round(v * 10) / 10
 end
 
+local RED_LOCKED_TEXT = "ffff2020"
+
 local fontIsNotRedTable = {}
 local function fontIsNotRed(font)
     local r,g,b = font:GetTextColor()
@@ -86,15 +88,9 @@ local function fontIsNotRed(font)
     if fontIsNotRedTable[indexString] then
         return fontIsNotRedTable[indexString]
     end
-    --[[ The rgb values returned from the GameTooltip are ridiculously long floats
-        that aren't equal to the values in the ColorMixin constants found in blizzard's Constants.lua
-        Rounding these values allows me to compare the red on the gametooltip to RED_FONT_COLOR (#FF2020)
-    ]]
-    r = nearestTenth(r)
-    g = nearestTenth(g)
-    b = nearestTenth(b)
 
-    fontIsNotRedTable[indexString] = not RED_FONT_COLOR:IsEqualTo(CreateColor(r,g,b))
+    local colorFont = CreateColor(r,g,b):GenerateHexColor()
+    fontIsNotRedTable[indexString] = RED_LOCKED_TEXT ~= colorFont
     return fontIsNotRedTable[indexString]
 end
 
