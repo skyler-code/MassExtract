@@ -1,4 +1,4 @@
-## Interface: 30403
+## Interface: 40400
 ## Title: MassExtract
 ## Notes: Addon for easy prospecting, milling, or lockpicking
 ## Version: @project-version@
