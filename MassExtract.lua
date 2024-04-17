@@ -156,20 +156,24 @@ function destroy:Setup(destroyType)
     end
 end
 
-local bindingsTable = {}
 function destroy:GetBindingFrame(bindingInfo)
-    if bindingsTable[bindingInfo.localeString] then
-        return bindingsTable[bindingInfo.localeString]
+    if not self.bindingsTable then
+        self.bindingsTable = setmetatable({}, {
+            __index = function(btable, key)
+                local bindingBtnName = key:gsub(" ", "")
+                local newBinding = CreateFrame("BUTTON", self:GetName()..bindingBtnName, self, "SecureActionButtonTemplate")
+                newBinding:SetAttribute("type", "macro")
+                newBinding:SetScript("PreClick", function(btn)
+                    btn:GetParent():Setup(key)
+                    btn:SetAttribute("macrotext", SLASH_CLICK1.." "..btn:GetParent():GetName())
+                end)
+                rawset(btable, key, newBinding)
+                return newBinding
+            end
+        })
     end
-    local bindingBtnName = bindingInfo.localeString:gsub(" ", "")
-    local newBinding = CreateFrame("BUTTON", self:GetName()..bindingBtnName, self, "SecureActionButtonTemplate")
-    newBinding:SetAttribute("type", "macro")
-    newBinding:SetScript("PreClick", function(btn)
-        btn:GetParent():Setup(bindingInfo.localeString)
-        btn:SetAttribute("macrotext", SLASH_CLICK1.." "..btn:GetParent():GetName())
-    end)
-    bindingsTable[bindingInfo.localeString] = newBinding
-    return newBinding
+
+    return self.bindingsTable[bindingInfo.localeString]
 end
 
 function destroy:CheckBindings()
