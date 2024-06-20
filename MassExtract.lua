@@ -2,10 +2,10 @@ local addonName = ...
 local destroy = CreateFrame("Button", addonName, UIParent, "SecureActionButtonTemplate")
 
 local tconcat = table.concat
-local LootFrame, MerchantFrame, CastingBarFrame, BACKPACK_CONTAINER, NUM_BAG_SLOTS, CreateColor, RED_FONT_COLOR
-    = LootFrame, MerchantFrame, CastingBarFrame, BACKPACK_CONTAINER, NUM_BAG_SLOTS, CreateColor, RED_FONT_COLOR
+local LootFrame, MerchantFrame, CastingBarFrame, BACKPACK_CONTAINER, NUM_BAG_SLOTS, CreateColor
+    = LootFrame, MerchantFrame, CastingBarFrame, BACKPACK_CONTAINER, NUM_BAG_SLOTS, CreateColor
 local UnitCastingInfo, GetSpellInfo, GetContainerItemInfo, GetContainerNumSlots, GetItemInfoInstant
-    = UnitCastingInfo, GetSpellInfo, C_Container.GetContainerItemInfo, C_Container.GetContainerNumSlots, GetItemInfoInstant
+    = UnitCastingInfo, GetSpellInfo, C_Container.GetContainerItemInfo, C_Container.GetContainerNumSlots, C_Item.GetItemInfoInstant
 
 local gprint = print
 local function print(...)
@@ -64,19 +64,13 @@ local function InvSlotHasText(bagSlot, itemSlot, value)
     destroyTooltip:SetBagItem(bagSlot, itemSlot)
     for i = 1, destroyTooltip:NumLines() do
         local tipName = ("%sText%%s%s"):format(destroyTooltip:GetName(), i)
-        local left = _G[tipName:format("Left")]
-        if (startsWith and leftText:find(value)) or left:GetText() == value then
-            return left
-        end
-        local right = _G[tipName:format("Right")]
-        if right:GetText() == value then
-            return right
+        for _,v in pairs({"Left", "Right"}) do
+            local fontString = _G[tipName:format(v)]
+            if fontString:GetText() == value then
+                return fontString
+            end
         end
     end
-end
-
-local function nearestTenth(v)
-    return Round(v * 10) / 10
 end
 
 local RED_LOCKED_TEXT = "ffff2020"
