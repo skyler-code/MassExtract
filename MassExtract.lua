@@ -39,6 +39,7 @@ local DESTROY_SPELL_DB = {
         bindingId = 3,
         localeString = lockpicking,
         tipString = LOCKED,
+        cache = {},
         itemPropCheck = function(itemId)
             local itemType, itemSubType = select(6, GetItemInfoInstant(itemId))
             return itemType == 15 and itemSubType == 0 -- Miscellaneous Junk
@@ -92,20 +93,20 @@ local function findmat(destroyInfo)
     local function slotHasMat(bagSlot, itemSlot)
         local itemInfo = GetContainerItemInfo(bagSlot,itemSlot)
         if itemInfo and itemInfo.itemID ~= HEARTHSTONE_ITEM_ID and (not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack) then
-            if destroyInfo.cache and destroyInfo.cache[itemInfo.itemID] ~= nil then
+            if destroyInfo.cache[itemInfo.itemID] ~= nil then
                 return destroyInfo.cache[itemInfo.itemID]
             end
             local function slotCanBeExtracted()
                 if not destroyInfo.itemPropCheck or destroyInfo.itemPropCheck(itemInfo.itemID) then
                     local font = InvSlotHasText(bagSlot, itemSlot, destroyInfo.tipString)
                     if font then
-                        return fontIsNotRed(font) or nil
+                        return fontIsNotRed(font) or nil, true
                     end
                 end
                 return false
             end
-            local matIsUsable = slotCanBeExtracted()
-            if destroyInfo.cache then
+            local matIsUsable, possible = slotCanBeExtracted()
+            if matIsUsable or not possible then
                 destroyInfo.cache[itemInfo.itemID] = matIsUsable
             end
             return matIsUsable
