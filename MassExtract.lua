@@ -65,24 +65,6 @@ local function CanRun()
     return not LootFrame:IsVisible() and not CastingBarFrame:IsVisible() and not UnitCastingInfo("player") and not MerchantFrame:IsVisible() and GetNumLootItems() == 0
 end
 
-local destroyTooltip
-local function InvSlotHasText(bagSlot, itemSlot, value)
-    if not destroyTooltip then
-        destroyTooltip = CreateFrame("GameTooltip", addonName.."Tooltip", nil, "GameTooltipTemplate")
-        destroyTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
-    end
-    destroyTooltip:SetBagItem(bagSlot, itemSlot)
-    for i = 1, destroyTooltip:NumLines() do
-        local tipName = ("%sText%%s%s"):format(destroyTooltip:GetName(), i)
-        for _,v in pairs({"Left", "Right"}) do
-            local fontString = _G[tipName:format(v)]
-            if fontString:GetText() == value then
-                return fontString
-            end
-        end
-    end
-end
-
 local RED_LOCKED_TEXT = "ffff2020"
 
 local fontIsNotRedTable = {}
@@ -98,37 +80,50 @@ local function fontIsNotRed(font)
     return fontIsNotRedTable[indexString]
 end
 
-local function findmat(destroyInfo)
-    local function slotHasMat(bagSlot, itemSlot)
-        local itemInfo = GetContainerItemInfo(bagSlot,itemSlot)
-        if itemInfo and itemInfo.itemID ~= HEARTHSTONE_ITEM_ID and (not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack) then
-            if destroyInfo.cache[itemInfo.itemID] ~= nil then
-                return destroyInfo.cache[itemInfo.itemID]
-            end
-            local function slotCanBeExtracted()
-                if Item:CreateFromBagAndSlot(bagSlot,itemSlot):IsItemLocked() then
-                    return false
-                end
-                if not destroyInfo.itemPropCheck or destroyInfo.itemPropCheck(itemInfo.itemID) then
-                    local font = InvSlotHasText(bagSlot, itemSlot, destroyInfo.tipString)
-                    if font then
-                        return fontIsNotRed(font) or nil, true
-                    end
-                end
-                return false
-            end
-            local matIsUsable, possible = slotCanBeExtracted()
-            if matIsUsable or not possible then
-                destroyInfo.cache[itemInfo.itemID] = matIsUsable
-            end
-            return matIsUsable
+local destroyTooltip
+local function InvSlotHasText(item, value)
+    if not destroyTooltip then
+        destroyTooltip = CreateFrame("GameTooltip", addonName.."Tooltip", nil, "GameTooltipTemplate")
+        destroyTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+    end
+    destroyTooltip:SetBagItem(item.itemLocation.bagID, item.itemLocation.slotIndex)
+
+    for _, region in pairs({destroyTooltip:GetRegions()}) do
+        if region.GetText and region:GetText() == value then
+            return region
         end
     end
+end
 
-    for i = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-        for j = 1, GetContainerNumSlots(i) do
-            if slotHasMat(i,j) then
-                return i,j
+local function SlotHasMat(destroyInfo, item)
+    local itemInfo = GetContainerItemInfo(item.itemLocation.bagID, item.itemLocation.slotIndex)
+    if itemInfo.itemID ~= HEARTHSTONE_ITEM_ID and (not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack) then
+        if destroyInfo.cache[itemInfo.itemID] ~= nil then
+            return destroyInfo.cache[itemInfo.itemID]
+        end
+        local function slotCanBeExtracted()
+            if (not destroyInfo.itemPropCheck or destroyInfo.itemPropCheck(itemInfo.itemID)) then
+                local font = InvSlotHasText(item, destroyInfo.tipString)
+                if font then
+                    return fontIsNotRed(font) or nil, true
+                end
+            end
+            return false
+        end
+        local matIsUsable, possible = slotCanBeExtracted()
+        if matIsUsable or not possible then
+            destroyInfo.cache[itemInfo.itemID] = matIsUsable
+        end
+        return matIsUsable
+    end
+end
+
+local function findmat(destroyInfo)
+    for bagSlot = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+        for itemSlot = 1, GetContainerNumSlots(bagSlot) do
+            local item = Item:CreateFromBagAndSlot(bagSlot, itemSlot)
+            if not item:IsItemEmpty() and not item:IsItemLocked() and SlotHasMat(destroyInfo, item) then
+                return bagSlot, itemSlot
             end
         end
     end
@@ -209,10 +204,9 @@ for k in pairs(destroy.events) do
 end
 
 function destroy:OnEvent(event, ...)
-    local eventFunc = self.events[event]
-    if eventFunc and type(eventFunc) == "function" then
-        eventFunc(self, event, ...)
+    if self.events[event] and type(self.events[event]) == "function" then
+        self.events[event](self, event, ...)
     end
 end
 
-destroy:SetScript("OnEvent", function(frame, ...) frame:OnEvent(...) end)
+destroy:SetScript("OnEvent", destroy.OnEvent)
