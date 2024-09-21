@@ -47,7 +47,7 @@ local DESTROY_SPELL_DB = {
     }
 }
 
-_G["BINDING_HEADER_"..addonName:upper().."HEADER"] = addonName
+_G["BINDING_HEADER_"..addonName:upper()] = addonName
 for k, v in pairs(DESTROY_SPELL_DB) do
     _G["BINDING_NAME_"..addonName:upper().."BINDING"..v.bindingId] = v.localeString
 end
