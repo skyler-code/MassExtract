@@ -129,7 +129,7 @@ local function findmat(destroyInfo)
     end
 end
 
-function destroy:Setup(destroyType)
+local function SetupMacro(self, destroyType)
     if not destroyType or type(destroyType) ~= "string" then
         print("DESTROY TYPE MUST BE STRING")
         return
@@ -158,6 +158,8 @@ function destroy:Setup(destroyType)
     end
 end
 
+destroy.Setup = SetupMacro
+
 function destroy:GetBindingFrame(bindingInfo)
     if not self.bindingsTable then
         self.bindingsTable = setmetatable({}, {
@@ -165,16 +167,12 @@ function destroy:GetBindingFrame(bindingInfo)
                 local bindingBtnName = key:gsub(" ", "")
                 local newBinding = CreateFrame("BUTTON", self:GetName()..bindingBtnName, self, "SecureActionButtonTemplate")
                 newBinding:SetAttribute("type", "macro")
-                newBinding:SetScript("PreClick", function(btn)
-                    btn:GetParent():Setup(key)
-                    btn:SetAttribute("macrotext", SLASH_CLICK1.." "..btn:GetParent():GetName())
-                end)
+                newBinding:SetScript("PreClick", function(btn) SetupMacro(btn, key) end)
                 rawset(btable, key, newBinding)
                 return newBinding
             end
         })
     end
-
     return self.bindingsTable[bindingInfo.localeString]
 end
 
