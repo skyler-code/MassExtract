@@ -4,17 +4,25 @@ local destroy = CreateFrame("Button", addonName, UIParent, "SecureActionButtonTe
 local tconcat = table.concat
 local LootFrame, MerchantFrame, CastingBarFrame, BACKPACK_CONTAINER, NUM_BAG_SLOTS, CreateColor
     = LootFrame, MerchantFrame, CastingBarFrame, BACKPACK_CONTAINER, NUM_BAG_SLOTS, CreateColor
-local UnitCastingInfo, GetSpellInfo, GetContainerItemInfo, GetContainerNumSlots, GetItemInfoInstant
-    = UnitCastingInfo, GetSpellInfo, C_Container.GetContainerItemInfo, C_Container.GetContainerNumSlots, C_Item.GetItemInfoInstant
+local UnitCastingInfo, GetContainerItemInfo, GetContainerNumSlots, GetItemInfoInstant
+    = UnitCastingInfo, C_Container.GetContainerItemInfo, C_Container.GetContainerNumSlots, C_Item.GetItemInfoInstant
 
 local gprint = print
 local function print(...)
     gprint("|cff33ff99"..addonName.."|r:", ...)
 end
 
-local prospecting = GetSpellInfo(31252) -- Prospecting
-local milling = GetSpellInfo(51005) -- Milling
-local lockpicking = GetSpellInfo(1804) -- Pick Lock
+local function GetSpellName(id)
+    if C_Spell.GetSpellName then
+        return C_Spell.GetSpellName(id)
+    end
+    local spellName = GetSpellInfo(id)
+    return spellName
+end
+
+local prospecting = GetSpellName(31252) -- Prospecting
+local milling = GetSpellName(51005) -- Milling
+local lockpicking = GetSpellName(1804) -- Pick Lock
 
 local DESTROY_SPELL_DB = {
     [prospecting:lower()] = {
@@ -46,6 +54,7 @@ local DESTROY_SPELL_DB = {
         end,
     }
 }
+destroy.DESTROY_SPELL_DB = DESTROY_SPELL_DB
 
 _G["BINDING_HEADER_"..addonName:upper()] = addonName
 for k, v in pairs(DESTROY_SPELL_DB) do
