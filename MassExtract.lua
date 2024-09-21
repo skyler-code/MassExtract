@@ -53,7 +53,7 @@ for k, v in pairs(DESTROY_SPELL_DB) do
 end
 
 local function CanRun()
-    return not LootFrame:IsVisible() and not CastingBarFrame:IsVisible() and not UnitCastingInfo("player") and not MerchantFrame:IsVisible()
+    return not LootFrame:IsVisible() and not CastingBarFrame:IsVisible() and not UnitCastingInfo("player") and not MerchantFrame:IsVisible() and GetNumLootItems() == 0
 end
 
 local destroyTooltip
@@ -97,6 +97,9 @@ local function findmat(destroyInfo)
                 return destroyInfo.cache[itemInfo.itemID]
             end
             local function slotCanBeExtracted()
+                if Item:CreateFromBagAndSlot(bagSlot,itemSlot):IsItemLocked() then
+                    return false
+                end
                 if not destroyInfo.itemPropCheck or destroyInfo.itemPropCheck(itemInfo.itemID) then
                     local font = InvSlotHasText(bagSlot, itemSlot, destroyInfo.tipString)
                     if font then
