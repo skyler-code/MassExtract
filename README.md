@@ -27,6 +27,17 @@ or
 /click MassExtract
 
 
+Disenchanting macro:
+#showtooltip Disenchant
+/cast Disenchant
+/click MassExtractDisenchant
+or
+#showtooltip Disenchant
+/cast Disenchant
+/run MassExtract:Setup("disenchant")
+/click MassExtract
+
+
 To localize you could do the following for prospecting:
 #showtooltip Prospecting
 /run MassExtract:Setup(GetSpellInfo(31252))
