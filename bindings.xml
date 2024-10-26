@@ -5,4 +5,6 @@
 	</Binding>
 	<Binding name="MASSEXTRACTBINDING3"  category="BINDING_HEADER_MASSEXTRACT">
 	</Binding>
+	<Binding name="MASSEXTRACTBINDING4"  category="BINDING_HEADER_MASSEXTRACT">
+	</Binding>
 </Bindings>

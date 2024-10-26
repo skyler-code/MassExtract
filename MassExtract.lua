@@ -23,6 +23,9 @@ end
 local prospecting = GetSpellName(31252) -- Prospecting
 local milling = GetSpellName(51005) -- Milling
 local lockpicking = GetSpellName(1804) -- Pick Lock
+local disenchant = GetSpellName(13262) -- Disenchant
+
+local ITEM_DISENCHANT_MIN_SKILL_MSG = ITEM_DISENCHANT_MIN_SKILL:gsub("%%s", "(.+)"):gsub("%%d", "(.+)")
 
 local DESTROY_SPELL_DB = {
     [prospecting:lower()] = {
@@ -31,8 +34,9 @@ local DESTROY_SPELL_DB = {
         tipString = ITEM_PROSPECTABLE,
         stack = 5,
         cache = {},
-        itemPropCheck = function(itemId)
-            local itemType, itemSubType = select(6, GetItemInfoInstant(itemId))
+        itemPropCheck = function(itemInfo)
+            ---@cast itemInfo ContainerItemInfo
+            local itemType, itemSubType = select(6, GetItemInfoInstant(itemInfo.itemID))
             return itemType == 7 and itemSubType == 7 -- Trade Goods Metal & Stone
         end,
     },
@@ -48,9 +52,19 @@ local DESTROY_SPELL_DB = {
         localeString = lockpicking,
         tipString = LOCKED,
         cache = {},
-        itemPropCheck = function(itemId)
-            local itemType, itemSubType = select(6, GetItemInfoInstant(itemId))
+        itemPropCheck = function(itemInfo)
+            ---@cast itemInfo ContainerItemInfo
+            local itemType, itemSubType = select(6, GetItemInfoInstant(itemInfo.itemID))
             return itemType == 15 and itemSubType == 0 -- Miscellaneous Junk
+        end,
+    },
+    [disenchant:lower()] = {
+        bindingId = 4,
+        localeString = disenchant,
+        tipString = {ITEM_BIND_ON_EQUIP,ITEM_DISENCHANT_MIN_SKILL_MSG},
+        itemPropCheck = function(itemInfo)
+            ---@cast itemInfo ContainerItemInfo
+            return itemInfo.quality <= Enum.ItemQuality.Rare
         end,
     }
 }
@@ -80,6 +94,14 @@ local function fontIsNotRed(font)
     return fontIsNotRedTable[indexString]
 end
 
+local function tableMatch(matchTable, value)
+    for k,v in pairs(matchTable) do
+        if v:match(value) then
+            return v:match(value)
+        end
+    end
+end
+
 local destroyTooltip
 local function InvSlotHasText(item, value)
     if not destroyTooltip then
@@ -88,9 +110,24 @@ local function InvSlotHasText(item, value)
     end
     destroyTooltip:SetBagItem(item.itemLocation.bagID, item.itemLocation.slotIndex)
 
-    for _, region in pairs({destroyTooltip:GetRegions()}) do
-        if region.GetText and region:GetText() == value then
-            return region
+    if type(value) == "table" then
+        local matches = 0
+        for _, region in pairs({destroyTooltip:GetRegions()}) do
+            local regionText = (region.GetText and region:GetText()) or ""
+            if regionText ~= "" then
+                if (tContains(value, regionText) or tableMatch(value, regionText)) then
+                    matches = matches + 1
+                end
+                if matches == #value then
+                    return region
+                end
+            end
+        end
+    else
+        for _, region in pairs({destroyTooltip:GetRegions()}) do
+            if region.GetText and region:GetText() == value then
+                return region
+            end
         end
     end
 end
@@ -98,11 +135,11 @@ end
 local function SlotHasMat(destroyInfo, item)
     local itemInfo = GetContainerItemInfo(item.itemLocation.bagID, item.itemLocation.slotIndex)
     if itemInfo.itemID ~= HEARTHSTONE_ITEM_ID and (not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack) then
-        if destroyInfo.cache[itemInfo.itemID] ~= nil then
+        if destroyInfo.cache and destroyInfo.cache[itemInfo.itemID] ~= nil then
             return destroyInfo.cache[itemInfo.itemID]
         end
         local function slotCanBeExtracted()
-            if (not destroyInfo.itemPropCheck or destroyInfo.itemPropCheck(itemInfo.itemID)) then
+            if (not destroyInfo.itemPropCheck or destroyInfo.itemPropCheck(itemInfo)) then
                 local font = InvSlotHasText(item, destroyInfo.tipString)
                 if font then
                     return fontIsNotRed(font) or nil, true
@@ -111,7 +148,7 @@ local function SlotHasMat(destroyInfo, item)
             return false
         end
         local matIsUsable, possible = slotCanBeExtracted()
-        if matIsUsable or not possible then
+        if destroyInfo.cache and (matIsUsable or not possible) then
             destroyInfo.cache[itemInfo.itemID] = matIsUsable
         end
         return matIsUsable
