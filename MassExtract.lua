@@ -12,18 +12,10 @@ local function print(...)
     gprint("|cff33ff99"..addonName.."|r:", ...)
 end
 
-local function GetSpellName(id)
-    if C_Spell.GetSpellName then
-        return C_Spell.GetSpellName(id)
-    end
-    local spellName = GetSpellInfo(id)
-    return spellName
-end
-
-local prospecting = GetSpellName(31252) -- Prospecting
-local milling = GetSpellName(51005) -- Milling
-local lockpicking = GetSpellName(1804) -- Pick Lock
-local disenchant = GetSpellName(13262) -- Disenchant
+local prospecting = C_Spell.GetSpellName(31252) -- Prospecting
+local milling = C_Spell.GetSpellName(51005) -- Milling
+local lockpicking = C_Spell.GetSpellName(1804) -- Pick Lock
+local disenchant = C_Spell.GetSpellName(13262) -- Disenchant
 
 local ITEM_DISENCHANT_MIN_SKILL_MSG = ITEM_DISENCHANT_MIN_SKILL:gsub("%%s", "(.+)"):gsub("%%d", "(.+)")
 
@@ -242,7 +234,7 @@ for k in pairs(destroy.events) do
 end
 
 function destroy:OnEvent(event, ...)
-    if self.events[event] and type(self.events[event]) == "function" then
+    if self.events[event] then
         self.events[event](self, event, ...)
     end
 end
