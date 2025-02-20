@@ -107,8 +107,11 @@ local function InvSlotHasText(item, value)
     if not destroyTooltip then
         destroyTooltip = CreateFrame("GameTooltip", addonName.."Tooltip", nil, "GameTooltipTemplate")
         destroyTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+    elseif destroyTooltip.lastItemID and item:GetItemID() == destroyTooltip.lastItemID then
+        return
     end
     destroyTooltip:SetBagItem(item.itemLocation.bagID, item.itemLocation.slotIndex)
+    destroyTooltip.lastItemID = item:GetItemID()
 
     if type(value) == "table" then
         local matches = 0

@@ -4,6 +4,4 @@
 ## Version: @project-version@
 ## DefaultState: disabled
 
-bindings.xml
-
 MassExtract.lua
