@@ -6,7 +6,7 @@ local function print(...)
     gprint(WrapTextInColorCode(addonName, "ff33ff99"), ...)
 end
 
-local ITEM_DISENCHANT_MIN_SKILL_MSG = ITEM_DISENCHANT_MIN_SKILL:gsub("%%s", "(.+)"):gsub("%%d", "(.+)")
+local ITEM_DISENCHANT_MIN_SKILL_MSG = ITEM_DISENCHANT_MIN_SKILL:gsub("%%[sd]", "(.+)")
 
 local DESTROY_SPELL_DB = {}
 do
@@ -85,7 +85,7 @@ local function InvSlotHasText(item, value)
         destroyTooltip = CreateFrame("GameTooltip", addonName.."Tooltip", nil, "GameTooltipTemplate")
         destroyTooltip:SetOwner(destroy, "ANCHOR_NONE")
     end
-    destroyTooltip:SetBagItem(item.itemLocation.bagID, item.itemLocation.slotIndex)
+    destroyTooltip:SetBagItem(item:GetItemLocation():GetBagAndSlot())
 
     if type(value) == "table" then
         local matches = 0
