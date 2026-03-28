@@ -2,70 +2,73 @@ local addonName = ...
 local destroy = CreateFrame("Button", addonName, UIParent, "SecureActionButtonTemplate")
 
 local tconcat = table.concat
-local GetContainerItemInfo, GetContainerNumSlots, GetItemInfoInstant
-    = C_Container.GetContainerItemInfo, C_Container.GetContainerNumSlots, C_Item.GetItemInfoInstant
 
 local gprint = print
 local function print(...)
     gprint("|cff33ff99"..addonName.."|r:", ...)
 end
 
-local prospecting = C_Spell.GetSpellName(31252) -- Prospecting
-local milling = C_Spell.GetSpellName(51005) -- Milling
-local lockpicking = C_Spell.GetSpellName(1804) -- Pick Lock
-local disenchant = C_Spell.GetSpellName(13262) -- Disenchant
-
 local ITEM_DISENCHANT_MIN_SKILL_MSG = ITEM_DISENCHANT_MIN_SKILL:gsub("%%s", "(.+)"):gsub("%%d", "(.+)")
 
-local DESTROY_SPELL_DB = {
-    [prospecting:lower()] = {
-        bindingId = 1,
-        localeString = prospecting,
-        tipString = ITEM_PROSPECTABLE,
-        stack = 5,
-        cache = {},
-        itemPropCheck = function(itemInfo)
-            ---@cast itemInfo ContainerItemInfo
-            local itemType, itemSubType = select(6, GetItemInfoInstant(itemInfo.itemID))
-            return itemType == 7 and itemSubType == 7 -- Trade Goods Metal & Stone
-        end,
-    },
-    [milling:lower()] = {
-        bindingId = 2,
-        localeString = milling,
-        tipString = ITEM_MILLABLE,
-        stack = 5,
-        cache = {},
-    },
-    [lockpicking:lower()] = {
-        bindingId = 3,
-        localeString = lockpicking,
-        tipString = LOCKED,
-        itemPropCheck = function(itemInfo)
-            ---@cast itemInfo ContainerItemInfo
-            local itemType, itemSubType = select(6, GetItemInfoInstant(itemInfo.itemID))
-            return itemType == 15 and itemSubType == 0 -- Miscellaneous Junk
-        end,
-    },
-    [disenchant:lower()] = {
-        bindingId = 4,
-        localeString = disenchant,
-        tipString = {ITEM_BIND_ON_EQUIP,ITEM_DISENCHANT_MIN_SKILL_MSG},
-        itemPropCheck = function(itemInfo)
-            ---@cast itemInfo ContainerItemInfo
-            return itemInfo.quality <= Enum.ItemQuality.Rare
-        end,
+local DESTROY_SPELL_DB = {}
+do
+    local SPELL_INFO = {
+        [31252] = { -- Prospecting
+            tipString = ITEM_PROSPECTABLE,
+            stack = 5,
+            cache = {},
+            itemPropCheck = function(itemInfo)
+                ---@cast itemInfo ContainerItemInfo
+                local itemType, itemSubType = select(6, C_Item.GetItemInfoInstant(itemInfo.itemID))
+                return itemType == 7 and itemSubType == 7 -- Trade Goods Metal & Stone
+            end,
+        },
+        [51005] = { -- Milling
+            tipString = ITEM_MILLABLE,
+            stack = 5,
+            cache = {},
+        },
+        [1804] = { -- Pick Lock
+            tipString = LOCKED,
+            itemPropCheck = function(itemInfo)
+                ---@cast itemInfo ContainerItemInfo
+                local itemType, itemSubType = select(6, C_Item.GetItemInfoInstant(itemInfo.itemID))
+                return itemType == 15 and itemSubType == 0 -- Miscellaneous Junk
+            end,
+        },
+        [13262] = { -- Disenchant
+            tipString = {ITEM_BIND_ON_EQUIP,ITEM_DISENCHANT_MIN_SKILL_MSG},
+            itemPropCheck = function(itemInfo)
+                ---@cast itemInfo ContainerItemInfo
+                return itemInfo.quality <= Enum.ItemQuality.Rare
+            end,
+        }
     }
-}
+    local sortNames = {}
+    for spellID, spellInfo in pairs(SPELL_INFO) do
+        if C_Spell.DoesSpellExist(spellID) then
+            local spellName = C_Spell.GetSpellName(spellID)
+            spellInfo.localeString = spellName
+            DESTROY_SPELL_DB[spellName:lower()] = spellInfo
+            tinsert(sortNames, spellName)
+        end
+    end
+    sort(sortNames)
+    for i, spellName in pairs(sortNames) do
+        DESTROY_SPELL_DB[spellName:lower()].bindingId = i
+    end
+end
+
 destroy.DESTROY_SPELL_DB = DESTROY_SPELL_DB
 
 _G["BINDING_HEADER_"..addonName:upper()] = addonName
-for k, v in pairs(DESTROY_SPELL_DB) do
+for _, v in pairs(DESTROY_SPELL_DB) do
     _G["BINDING_NAME_"..addonName:upper().."BINDING"..v.bindingId] = v.localeString
 end
 
+local castBar = CastingBarFrame or PlayerCastingBarFrame
 local function CanRun()
-    return not LootFrame:IsVisible() and not CastingBarFrame:IsVisible() and not UnitCastingInfo("player") and not MerchantFrame:IsVisible() and GetNumLootItems() == 0
+    return not LootFrame:IsVisible() and not castBar:IsVisible() and not UnitCastingInfo("player") and not MerchantFrame:IsVisible() and GetNumLootItems() == 0
 end
 
 local RED_LOCKED_TEXT = "ffff2020"
@@ -84,7 +87,7 @@ local function fontIsNotRed(font)
 end
 
 local function tableMatch(matchTable, value)
-    for k,v in pairs(matchTable) do
+    for _, v in pairs(matchTable) do
         if v:match(value) then
             return v:match(value)
         end
@@ -125,7 +128,7 @@ local function InvSlotHasText(item, value)
 end
 
 local function SlotHasMat(destroyInfo, item)
-    local itemInfo = GetContainerItemInfo(item.itemLocation.bagID, item.itemLocation.slotIndex)
+    local itemInfo = C_Container.GetContainerItemInfo(item.itemLocation.bagID, item.itemLocation.slotIndex)
     if itemInfo.itemID ~= HEARTHSTONE_ITEM_ID and (not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack) then
         if destroyInfo.cache and destroyInfo.cache[itemInfo.itemID] ~= nil then
             return destroyInfo.cache[itemInfo.itemID]
@@ -149,8 +152,9 @@ end
 
 local function findmat(destroyInfo)
     for bagSlot = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-        for itemSlot = 1, GetContainerNumSlots(bagSlot) do
+        for itemSlot = 1, C_Container.GetContainerNumSlots(bagSlot) do
             local item = Item:CreateFromBagAndSlot(bagSlot, itemSlot)
+
             if not item:IsItemEmpty() and not item:IsItemLocked() and SlotHasMat(destroyInfo, item) then
                 return bagSlot, itemSlot
             end
