@@ -2,10 +2,8 @@ local addonName = ...
 local destroy = CreateFrame("Button", addonName, UIParent, "SecureActionButtonTemplate")
 
 local tconcat = table.concat
-local LootFrame, MerchantFrame, CastingBarFrame, BACKPACK_CONTAINER, NUM_BAG_SLOTS, CreateColor
-    = LootFrame, MerchantFrame, CastingBarFrame, BACKPACK_CONTAINER, NUM_BAG_SLOTS, CreateColor
-local UnitCastingInfo, GetContainerItemInfo, GetContainerNumSlots, GetItemInfoInstant
-    = UnitCastingInfo, C_Container.GetContainerItemInfo, C_Container.GetContainerNumSlots, C_Item.GetItemInfoInstant
+local GetContainerItemInfo, GetContainerNumSlots, GetItemInfoInstant
+    = C_Container.GetContainerItemInfo, C_Container.GetContainerNumSlots, C_Item.GetItemInfoInstant
 
 local gprint = print
 local function print(...)
