@@ -3,7 +3,7 @@ local destroy = CreateFrame("Button", addonName, nil, "SecureActionButtonTemplat
 
 local gprint = print
 local function print(...)
-    gprint("|cff33ff99"..addonName.."|r:", ...)
+    gprint(WrapTextInColorCode(addonName, "ff33ff99"), ...)
 end
 
 local ITEM_DISENCHANT_MIN_SKILL_MSG = ITEM_DISENCHANT_MIN_SKILL:gsub("%%s", "(.+)"):gsub("%%d", "(.+)")
@@ -16,8 +16,7 @@ do
             stack = 5,
             cache = {},
             itemPropCheck = function(itemInfo)
-                ---@cast itemInfo ContainerItemInfo
-                local itemType, itemSubType = select(6, C_Item.GetItemInfoInstant(itemInfo.itemID))
+                local itemType, itemSubType = select(3, itemInfo:GetInventoryTypeName())
                 return itemType == 7 and itemSubType == 7 -- Trade Goods Metal & Stone
             end,
         },
@@ -29,16 +28,14 @@ do
         [1804] = { -- Pick Lock
             tipString = LOCKED,
             itemPropCheck = function(itemInfo)
-                ---@cast itemInfo ContainerItemInfo
-                local itemType, itemSubType = select(6, C_Item.GetItemInfoInstant(itemInfo.itemID))
+                local itemType, itemSubType = select(3, itemInfo:GetInventoryTypeName())
                 return itemType == 15 and itemSubType == 0 -- Miscellaneous Junk
             end,
         },
         [13262] = { -- Disenchant
             tipString = {ITEM_BIND_ON_EQUIP,ITEM_DISENCHANT_MIN_SKILL_MSG},
             itemPropCheck = function(itemInfo)
-                ---@cast itemInfo ContainerItemInfo
-                return itemInfo.quality <= Enum.ItemQuality.Rare
+                return itemInfo:GetItemQuality() <= Enum.ItemQuality.Rare
             end,
         }
     }
@@ -62,9 +59,9 @@ destroy.DESTROY_SPELL_DB = DESTROY_SPELL_DB
 
 _G["BINDING_HEADER_"..addonName:upper()] = addonName
 
-local castBar = CastingBarFrame or PlayerCastingBarFrame
+local BLOCKER_FRAMES = { LootFrame, CastingBarFrame or PlayerCastingBarFrame, MerchantFrame }
 local function CanRun()
-    return not LootFrame:IsVisible() and not castBar:IsVisible() and not UnitCastingInfo("player") and not MerchantFrame:IsVisible() and GetNumLootItems() == 0
+    return not ContainsIf(BLOCKER_FRAMES, function(f) return f:IsVisible() end) and not CastingInfo() and not ChannelInfo() and GetNumLootItems() == 0
 end
 
 local RED_LOCKED_TEXT = "ffff2020"
@@ -94,12 +91,9 @@ local destroyTooltip
 local function InvSlotHasText(item, value)
     if not destroyTooltip then
         destroyTooltip = CreateFrame("GameTooltip", addonName.."Tooltip", nil, "GameTooltipTemplate")
-        destroyTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
-    elseif destroyTooltip.lastItemID and item:GetItemID() == destroyTooltip.lastItemID then
-        return
+        destroyTooltip:SetOwner(destroy, "ANCHOR_NONE")
     end
     destroyTooltip:SetBagItem(item.itemLocation.bagID, item.itemLocation.slotIndex)
-    destroyTooltip.lastItemID = item:GetItemID()
 
     if type(value) == "table" then
         local matches = 0
@@ -123,14 +117,20 @@ local function InvSlotHasText(item, value)
     end
 end
 
+local IGNORED_ITEMS = {
+    [HEARTHSTONE_ITEM_ID] = true
+}
+
 local function SlotHasMat(destroyInfo, item)
+    local itemID = item:GetItemID()
+    if IGNORED_ITEMS[itemID] then return end
     local itemInfo = C_Container.GetContainerItemInfo(item.itemLocation.bagID, item.itemLocation.slotIndex)
-    if itemInfo.itemID ~= HEARTHSTONE_ITEM_ID and (not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack) then
-        if destroyInfo.cache and destroyInfo.cache[itemInfo.itemID] ~= nil then
-            return destroyInfo.cache[itemInfo.itemID]
+    if not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack then
+        if destroyInfo.cache and destroyInfo.cache[itemID] ~= nil then
+            return destroyInfo.cache[itemID]
         end
         local function slotCanBeExtracted()
-            if (not destroyInfo.itemPropCheck or destroyInfo.itemPropCheck(itemInfo)) then
+            if not destroyInfo.itemPropCheck or destroyInfo.itemPropCheck(item) then
                 local font = InvSlotHasText(item, destroyInfo.tipString)
                 if font then
                     return fontIsNotRed(font) or nil, true
@@ -140,19 +140,19 @@ local function SlotHasMat(destroyInfo, item)
         end
         local matIsUsable, possible = slotCanBeExtracted()
         if destroyInfo.cache and (matIsUsable or not possible) then
-            destroyInfo.cache[itemInfo.itemID] = matIsUsable
+            destroyInfo.cache[itemID] = matIsUsable
         end
         return matIsUsable
     end
 end
 
 local function findmat(destroyInfo)
+    if not CanRun() then return end
     for bagSlot = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
         for itemSlot = 1, C_Container.GetContainerNumSlots(bagSlot) do
             local item = Item:CreateFromBagAndSlot(bagSlot, itemSlot)
-
             if not item:IsItemEmpty() and not item:IsItemLocked() and SlotHasMat(destroyInfo, item) then
-                return bagSlot, itemSlot
+                return item
             end
         end
     end
@@ -175,11 +175,9 @@ local function SetupMacro(self, destroyType)
     end
 
     local text = ""
-    if CanRun() then
-        local b,s = findmat(destroyInfo)
-        if b and s then
-            text = ("%s %s\n%s %s %s"):format( SLASH_CAST1, destroyInfo.localeString, SLASH_USE1, b, s )
-        end
+    local item = findmat(destroyInfo)
+    if item then
+        text = ("%s %s\n%s %s %s"):format( SLASH_CAST1, destroyInfo.localeString, SLASH_USE1, item:GetItemLocation():GetBagAndSlot() )
     end
     self:SetAttribute("macrotext", text)
     if text ~= "" then
