@@ -199,6 +199,7 @@ function destroy:GetBindingFrame(bindingInfo)
                 local bindingBtnName = key:gsub(" ", "")
                 local newBinding = CreateFrame("BUTTON", self:GetName()..bindingBtnName, self, "SecureActionButtonTemplate")
                 newBinding:SetAttribute("type", "macro")
+                newBinding:RegisterForClicks("AnyDown")
                 newBinding:SetScript("PreClick", function(btn) SetupMacro(btn, key) end)
                 rawset(btable, key, newBinding)
                 return newBinding
