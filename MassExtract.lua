@@ -43,7 +43,6 @@ local DESTROY_SPELL_DB = {
         bindingId = 3,
         localeString = lockpicking,
         tipString = LOCKED,
-        cache = {},
         itemPropCheck = function(itemInfo)
             ---@cast itemInfo ContainerItemInfo
             local itemType, itemSubType = select(6, GetItemInfoInstant(itemInfo.itemID))
