@@ -59,7 +59,7 @@ destroy.DESTROY_SPELL_DB = DESTROY_SPELL_DB
 
 _G["BINDING_HEADER_"..addonName:upper()] = addonName
 
-local BLOCKER_FRAMES = { LootFrame, CastingBarFrame or PlayerCastingBarFrame, MerchantFrame }
+local BLOCKER_FRAMES = { LootFrame, CastingBarFrame, PlayerCastingBarFrame, MerchantFrame }
 local function CanRun()
     return not ContainsIf(BLOCKER_FRAMES, function(f) return f:IsVisible() end) and not CastingInfo() and not ChannelInfo() and GetNumLootItems() == 0
 end
@@ -79,14 +79,6 @@ local function fontIsNotRed(font)
     return fontIsNotRedTable[indexString]
 end
 
-local function tableMatch(matchTable, value)
-    for _, v in pairs(matchTable) do
-        if v:match(value) then
-            return v:match(value)
-        end
-    end
-end
-
 local destroyTooltip
 local function InvSlotHasText(item, value)
     if not destroyTooltip then
@@ -100,7 +92,7 @@ local function InvSlotHasText(item, value)
         for _, region in pairs({destroyTooltip:GetRegions()}) do
             local regionText = (region.GetText and region:GetText()) or ""
             if regionText ~= "" then
-                if (tContains(value, regionText) or tableMatch(value, regionText)) then
+                if ContainsIf(value, function(v) return v == regionText or v:match(regionText) end) then
                     matches = matches + 1
                 end
                 if matches == #value then
@@ -124,7 +116,7 @@ local IGNORED_ITEMS = {
 local function SlotHasMat(destroyInfo, item)
     local itemID = item:GetItemID()
     if IGNORED_ITEMS[itemID] then return end
-    local itemInfo = C_Container.GetContainerItemInfo(item.itemLocation.bagID, item.itemLocation.slotIndex)
+    local itemInfo = C_Container.GetContainerItemInfo(item:GetItemLocation():GetBagAndSlot())
     if not destroyInfo.stack or itemInfo.stackCount >= destroyInfo.stack then
         if destroyInfo.cache and destroyInfo.cache[itemID] ~= nil then
             return destroyInfo.cache[itemID]
