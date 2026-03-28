@@ -1,7 +1,5 @@
 local addonName = ...
-local destroy = CreateFrame("Button", addonName, UIParent, "SecureActionButtonTemplate")
-
-local tconcat = table.concat
+local destroy = CreateFrame("Button", addonName, nil, "SecureActionButtonTemplate")
 
 local gprint = print
 local function print(...)
@@ -54,17 +52,15 @@ do
         end
     end
     sort(sortNames)
-    for i, spellName in pairs(sortNames) do
-        DESTROY_SPELL_DB[spellName:lower()].bindingId = i
+    for bindingId, spellName in pairs(sortNames) do
+        _G["BINDING_NAME_"..addonName:upper().."BINDING"..bindingId] = spellName
+        DESTROY_SPELL_DB[spellName:lower()].bindingId = bindingId
     end
 end
 
 destroy.DESTROY_SPELL_DB = DESTROY_SPELL_DB
 
 _G["BINDING_HEADER_"..addonName:upper()] = addonName
-for _, v in pairs(DESTROY_SPELL_DB) do
-    _G["BINDING_NAME_"..addonName:upper().."BINDING"..v.bindingId] = v.localeString
-end
 
 local castBar = CastingBarFrame or PlayerCastingBarFrame
 local function CanRun()
@@ -76,7 +72,7 @@ local RED_LOCKED_TEXT = "ffff2020"
 local fontIsNotRedTable = {}
 local function fontIsNotRed(font)
     local r,g,b = font:GetTextColor()
-    local indexString = tconcat({r,g,b}, ",")
+    local indexString = table.concat({r,g,b}, ",")
     if fontIsNotRedTable[indexString] then
         return fontIsNotRedTable[indexString]
     end
