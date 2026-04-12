@@ -33,6 +33,7 @@ do
             end,
         },
         [13262] = { -- Disenchant
+            prefix = true,
             tipString = {ITEM_BIND_ON_EQUIP,ITEM_DISENCHANT_MIN_SKILL_MSG},
             itemPropCheck = function(itemInfo)
                 return itemInfo:GetItemQuality() <= Enum.ItemQuality.Rare
@@ -92,7 +93,7 @@ local function InvSlotHasText(item, value)
         for _, region in pairs({destroyTooltip:GetRegions()}) do
             local regionText = (region.GetText and region:GetText()) or ""
             if regionText ~= "" then
-                if ContainsIf(value, function(v) return v == regionText or v:match(regionText) end) then
+                if ContainsIf(value, function(v) return v == regionText or regionText:match(v) end) then
                     matches = matches + 1
                 end
                 if matches == #value then
@@ -170,6 +171,8 @@ local function SetupMacro(self, destroyType)
     local item = findmat(destroyInfo)
     if item then
         text = ("%s %s\n%s %s %s"):format( SLASH_CAST1, destroyInfo.localeString, SLASH_USE1, item:GetItemLocation():GetBagAndSlot() )
+    elseif destroyInfo.prefix then
+        text = SLASH_CAST1 .. " " .. destroyInfo.localeString
     end
     self:SetAttribute("macrotext", text)
     if text ~= "" then
